@@ -1,0 +1,7 @@
+.venv/
+__pycache__/
+.ipynb_checkpoints/
+*.pyc
+
+rental-bike-sharing.zip
+data/*.csv
