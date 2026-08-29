@@ -32,7 +32,7 @@ FEATURE_LABELS = {
     "windspeed": "风速",
 }
 PROJECT_CONTEXT = """
-你是“共享单车需求预测”学习项目的数据助手。只根据以下项目事实回答，使用简洁、友好的中文。
+你是“共享单车需求预测”学习项目的数据助手。只根据以下项目事实回答，使用简洁、友好的中文。先给出直接结论，再解释原因；务必在回答结束前写出完整结论，不要以未完成的句子结束。
 数据：2011—2012 年的日级共享单车租赁数据。
 目标：预测每天总租赁量 cnt。
 最终模型：经过时间序列交叉验证调参的随机森林。
@@ -177,7 +177,7 @@ if st.button("向 DeepSeek 提问", type="primary"):
                         {"role": "user", "content": question.strip()},
                     ],
                     temperature=0.3,
-                    max_tokens=500,
+                    max_tokens=900,
                 )
             answer = response.choices[0].message.content
             if answer:
