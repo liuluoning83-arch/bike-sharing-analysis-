@@ -93,7 +93,9 @@ streamlit run app.py
 
 ## 批量预测
 
-网页支持上传 CSV 文件，一次预测多条记录并下载结果。可先在网页下载模板，CSV 需要包含以下字段：
+网页支持上传 CSV 文件，一次预测多条记录并下载结果。侧边栏选择日级或小时级预测后，下载的模板会自动匹配当前模式。
+
+日级模板需要包含以下字段：
 
 ```text
 date, weather, holiday, temperature_c, feels_like_c, humidity_percent, wind_speed_kmh
@@ -102,6 +104,10 @@ date, weather, holiday, temperature_c, feels_like_c, humidity_percent, wind_spee
 - `date`：日期，格式为 `YYYY-MM-DD`
 - `weather`：天气，1=晴朗/少云，2=薄雾/多云，3=小雨或小雪，4=强降雨或强降雪
 - `holiday`：是否节假日，0=否，1=是
+
+小时级模板在上述字段基础上增加：
+
+- `hour`：小时，取值为 0—23
 
 ## 模型可解释性
 

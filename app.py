@@ -221,24 +221,30 @@ if st.button("向 DeepSeek 提问", type="primary"):
             st.error("调用助手时发生未知错误，请稍后重试。")
 
 st.divider()
-st.header("批量预测")
-st.write("上传 CSV 文件后，可一次预测多条日期与天气条件，并下载预测结果。")
+st.header(f"批量预测（{prediction_mode}）")
+st.write("上传 CSV 文件后，可一次预测多条日期与天气条件，并下载预测结果。模板会随当前预测粒度变化。")
 
-template = pd.DataFrame(
-    {
-        "date": ["2012-09-15", "2012-12-10"],
-        "weather": [1, 3],
-        "holiday": [0, 0],
-        "temperature_c": [25, 6],
-        "feels_like_c": [26, 4],
-        "humidity_percent": [60, 80],
-        "wind_speed_kmh": [15, 25],
+template_data = {
+    "date": ["2012-09-15", "2012-12-10"],
+    "weather": [1, 3],
+    "holiday": [0, 0],
+    "temperature_c": [25, 6],
+    "feels_like_c": [26, 4],
+    "humidity_percent": [60, 80],
+    "wind_speed_kmh": [15, 25],
+}
+if prediction_mode == "小时级预测":
+    template_data = {
+        "date": template_data["date"],
+        "hour": [8, 18],
+        **{column: values for column, values in template_data.items() if column != "date"},
     }
-)
+template = pd.DataFrame(template_data)
+batch_kind = "hourly" if prediction_mode == "小时级预测" else "daily"
 st.download_button(
     "下载 CSV 模板",
     data=template.to_csv(index=False).encode("utf-8-sig"),
-    file_name="bike_rental_prediction_template.csv",
+    file_name=f"bike_rental_{batch_kind}_prediction_template.csv",
     mime="text/csv",
 )
 
@@ -266,6 +272,8 @@ if uploaded_file is not None:
             "humidity_percent",
             "wind_speed_kmh",
         ]
+        if prediction_mode == "小时级预测":
+            numeric_columns.append("hour")
         for column in numeric_columns:
             batch[column] = pd.to_numeric(batch[column], errors="coerce")
 
@@ -279,24 +287,29 @@ if uploaded_file is not None:
             raise ValueError("humidity_percent 必须在 0 到 100 之间。")
         if not batch["wind_speed_kmh"].between(0, 67).all():
             raise ValueError("wind_speed_kmh 必须在 0 到 67 之间。")
+        if prediction_mode == "小时级预测" and not batch["hour"].between(0, 23).all():
+            raise ValueError("hour 必须在 0 到 23 之间。")
 
         feature_rows = []
         for _, row in batch.iterrows():
-            feature_rows.append(
-                build_feature_row(
-                    selected_date=row["date"].date(),
-                    weather=int(row["weather"]),
-                    holiday=bool(row["holiday"]),
-                    temperature_c=float(row["temperature_c"]),
-                    feels_like_c=float(row["feels_like_c"]),
-                    humidity_percent=int(row["humidity_percent"]),
-                    wind_speed_kmh=float(row["wind_speed_kmh"]),
-                )
-            )
+            row_inputs = {
+                "selected_date": row["date"].date(),
+                "weather": int(row["weather"]),
+                "holiday": bool(row["holiday"]),
+                "temperature_c": float(row["temperature_c"]),
+                "feels_like_c": float(row["feels_like_c"]),
+                "humidity_percent": int(row["humidity_percent"]),
+                "wind_speed_kmh": float(row["wind_speed_kmh"]),
+            }
+            if prediction_mode == "小时级预测":
+                feature_rows.append(build_hourly_feature_row(hour=int(row["hour"]), **row_inputs))
+            else:
+                feature_rows.append(build_feature_row(**row_inputs))
 
         batch_features = pd.concat(feature_rows, ignore_index=True)
         results = batch.copy()
-        results["predicted_rental_count"] = daily_model.predict(batch_features).round().clip(lower=0).astype(int)
+        result_column = "predicted_hourly_rental_count" if prediction_mode == "小时级预测" else "predicted_daily_rental_count"
+        results[result_column] = active_model.predict(batch_features).round().clip(lower=0).astype(int)
         results["date"] = results["date"].dt.strftime("%Y-%m-%d")
 
         st.success(f"已完成 {len(results)} 条记录的预测。")
@@ -304,7 +317,7 @@ if uploaded_file is not None:
         st.download_button(
             "下载预测结果 CSV",
             data=results.to_csv(index=False).encode("utf-8-sig"),
-            file_name="bike_rental_predictions.csv",
+            file_name=f"bike_rental_{batch_kind}_predictions.csv",
             mime="text/csv",
         )
     except (ValueError, pd.errors.ParserError) as error:
