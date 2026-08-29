@@ -4,6 +4,12 @@
 
 本项目基于共享单车日租赁数据，完成数据清洗检查、探索性数据分析、机器学习建模与模型优化，目标是预测每天的共享单车总租赁量。
 
+## 在线体验
+
+可直接打开部署后的预测网页：
+
+[共享单车租赁需求预测网页](https://citqbo6ityiglclmsukh68.streamlit.app/)
+
 ## 数据集
 
 - 来源：Kaggle Rental Bike Sharing Dataset
