@@ -75,6 +75,18 @@ streamlit run app.py
 
 网页根据日期、天气、温度、湿度和风速生成租赁量预测。模型仅使用 2011—2012 年数据训练，适合学习和演示，不能代替真实运营预测。
 
+## 批量预测
+
+网页支持上传 CSV 文件，一次预测多条记录并下载结果。可先在网页下载模板，CSV 需要包含以下字段：
+
+```text
+date, weather, holiday, temperature_c, feels_like_c, humidity_percent, wind_speed_kmh
+```
+
+- `date`：日期，格式为 `YYYY-MM-DD`
+- `weather`：天气，1=晴朗/少云，2=薄雾/多云，3=小雨或小雪，4=强降雨或强降雪
+- `holiday`：是否节假日，0=否，1=是
+
 如需重新训练模型，请从 Kaggle 下载数据集，将 `day.csv` 放入 `data/` 文件夹后运行：
 
 ```bash

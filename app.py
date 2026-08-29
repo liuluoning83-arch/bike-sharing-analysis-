@@ -107,3 +107,93 @@ st.info(
     "这是学习项目的演示预测。模型未包含实时天气、节假日活动、区域车辆供给等信息；"
     "对 2012 年后的日期会沿用 2012 年的需求水平，因此不能直接用于真实运营决策。"
 )
+
+st.divider()
+st.header("批量预测")
+st.write("上传 CSV 文件后，可一次预测多条日期与天气条件，并下载预测结果。")
+
+template = pd.DataFrame(
+    {
+        "date": ["2012-09-15", "2012-12-10"],
+        "weather": [1, 3],
+        "holiday": [0, 0],
+        "temperature_c": [25, 6],
+        "feels_like_c": [26, 4],
+        "humidity_percent": [60, 80],
+        "wind_speed_kmh": [15, 25],
+    }
+)
+st.download_button(
+    "下载 CSV 模板",
+    data=template.to_csv(index=False).encode("utf-8-sig"),
+    file_name="bike_rental_prediction_template.csv",
+    mime="text/csv",
+)
+
+uploaded_file = st.file_uploader("上传待预测 CSV", type="csv")
+required_columns = set(template.columns)
+
+if uploaded_file is not None:
+    try:
+        batch = pd.read_csv(uploaded_file)
+        missing_columns = required_columns.difference(batch.columns)
+        if missing_columns:
+            raise ValueError(f"CSV 缺少字段：{', '.join(sorted(missing_columns))}")
+        if batch.empty:
+            raise ValueError("CSV 中没有可预测的数据。")
+        if len(batch) > 1000:
+            raise ValueError("一次最多上传 1000 条记录。")
+
+        batch = batch.copy()
+        batch["date"] = pd.to_datetime(batch["date"], format="%Y-%m-%d", errors="coerce")
+        numeric_columns = [
+            "weather",
+            "holiday",
+            "temperature_c",
+            "feels_like_c",
+            "humidity_percent",
+            "wind_speed_kmh",
+        ]
+        for column in numeric_columns:
+            batch[column] = pd.to_numeric(batch[column], errors="coerce")
+
+        if batch.isna().any().any():
+            raise ValueError("CSV 包含空值或格式错误。日期必须是 YYYY-MM-DD，数值列必须填写数字。")
+        if not batch["weather"].isin([1, 2, 3, 4]).all():
+            raise ValueError("weather 只能填写 1、2、3 或 4。")
+        if not batch["holiday"].isin([0, 1]).all():
+            raise ValueError("holiday 只能填写 0（否）或 1（是）。")
+        if not batch["humidity_percent"].between(0, 100).all():
+            raise ValueError("humidity_percent 必须在 0 到 100 之间。")
+        if not batch["wind_speed_kmh"].between(0, 67).all():
+            raise ValueError("wind_speed_kmh 必须在 0 到 67 之间。")
+
+        feature_rows = []
+        for _, row in batch.iterrows():
+            feature_rows.append(
+                build_feature_row(
+                    selected_date=row["date"].date(),
+                    weather=int(row["weather"]),
+                    holiday=bool(row["holiday"]),
+                    temperature_c=float(row["temperature_c"]),
+                    feels_like_c=float(row["feels_like_c"]),
+                    humidity_percent=int(row["humidity_percent"]),
+                    wind_speed_kmh=float(row["wind_speed_kmh"]),
+                )
+            )
+
+        batch_features = pd.concat(feature_rows, ignore_index=True)
+        results = batch.copy()
+        results["predicted_rental_count"] = model.predict(batch_features).round().clip(lower=0).astype(int)
+        results["date"] = results["date"].dt.strftime("%Y-%m-%d")
+
+        st.success(f"已完成 {len(results)} 条记录的预测。")
+        st.dataframe(results, use_container_width=True, hide_index=True)
+        st.download_button(
+            "下载预测结果 CSV",
+            data=results.to_csv(index=False).encode("utf-8-sig"),
+            file_name="bike_rental_predictions.csv",
+            mime="text/csv",
+        )
+    except (ValueError, pd.errors.ParserError) as error:
+        st.error(f"无法完成批量预测：{error}")
