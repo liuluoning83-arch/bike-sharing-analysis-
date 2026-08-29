@@ -130,9 +130,6 @@ if not MODEL_PATH.exists():
 
 hourly_available = HOURLY_MODEL_PATH.exists()
 history_aware_available = HISTORY_AWARE_MODEL_PATH.exists()
-daily_model = load(MODEL_PATH)
-hourly_model = load(HOURLY_MODEL_PATH) if hourly_available else None
-history_aware_model = load(HISTORY_AWARE_MODEL_PATH) if history_aware_available else None
 
 with st.sidebar:
     st.header("输入条件")
@@ -181,17 +178,19 @@ if prediction_mode == "高级小时级预测（需要历史需求）":
         rolling_mean_24=rolling_mean_24,
         **form_inputs,
     )
-    active_model = history_aware_model
+    # Load only the selected model. Loading all three random-forest models at
+    # startup can exceed the memory limit of a small cloud deployment.
+    active_model = load(HISTORY_AWARE_MODEL_PATH)
     active_features = HISTORY_AWARE_FEATURES
     metric_label = "高级预测小时租赁量"
 elif prediction_mode == "小时级预测":
     input_data = build_hourly_feature_row(hour=hour, **form_inputs)
-    active_model = hourly_model
+    active_model = load(HOURLY_MODEL_PATH)
     active_features = HOURLY_FEATURES
     metric_label = "预测小时租赁量"
 else:
     input_data = build_feature_row(**form_inputs)
-    active_model = daily_model
+    active_model = load(MODEL_PATH)
     active_features = FEATURES
     metric_label = "预测日租赁量"
 
