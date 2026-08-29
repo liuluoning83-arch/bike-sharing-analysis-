@@ -6,7 +6,14 @@ from pathlib import Path
 import pandas as pd
 import streamlit as st
 from joblib import load
-from openai import APIConnectionError, APIStatusError, OpenAI
+
+# AI 问答是可选功能：即使云端暂时没有安装 openai，预测网页也应能正常启动。
+try:
+    from openai import APIConnectionError, APIStatusError, OpenAI
+
+    OPENAI_AVAILABLE = True
+except ImportError:
+    OPENAI_AVAILABLE = False
 
 from src.history_aware_model import HISTORY_AWARE_FEATURES, HISTORY_FEATURES
 from src.hourly_model import HOURLY_FEATURES
@@ -238,12 +245,15 @@ question = st.text_area(
     max_chars=500,
 )
 if st.button("向 DeepSeek 提问", type="primary"):
-    api_key = st.secrets.get("DEEPSEEK_API_KEY")
-    if not api_key:
-        st.error("尚未配置 DEEPSEEK_API_KEY。请在 Streamlit Cloud 的 Settings → Secrets 中添加后重试。")
-    elif not question.strip():
-        st.warning("请先输入一个问题。")
+    if not OPENAI_AVAILABLE:
+        st.error("AI 问答组件正在部署中，请等待片刻后刷新页面；预测功能不受影响。")
     else:
+        api_key = st.secrets.get("DEEPSEEK_API_KEY")
+    if OPENAI_AVAILABLE and not api_key:
+        st.error("尚未配置 DEEPSEEK_API_KEY。请在 Streamlit Cloud 的 Settings → Secrets 中添加后重试。")
+    elif OPENAI_AVAILABLE and not question.strip():
+        st.warning("请先输入一个问题。")
+    elif OPENAI_AVAILABLE:
         try:
             client = OpenAI(api_key=api_key, base_url="https://api.deepseek.com")
             with st.spinner("正在生成回答…"):
