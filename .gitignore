@@ -4,4 +4,4 @@ __pycache__/
 *.pyc
 
 rental-bike-sharing.zip
-data/*.csv
+data/

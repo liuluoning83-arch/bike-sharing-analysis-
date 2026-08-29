@@ -44,8 +44,39 @@
 
 ```text
 bike-sharing-analysis/
-├── data/                 # 原始数据
+├── app.py                # Streamlit 交互预测网页
+├── data/                 # 原始数据（不提交至 Git）
 ├── notebooks/            # 数据分析与建模 Notebook
-├── src/                  # 后续可整理的 Python 源代码
+├── src/                  # 可复用训练代码
+├── artifacts/            # 部署使用的预训练模型文件
 ├── requirements.txt      # 项目依赖
 └── README.md
+```
+
+## 本地运行
+
+1. 安装依赖：
+
+```bash
+python -m pip install -r requirements.txt
+```
+
+2. 启动交互预测网页：
+
+```bash
+streamlit run app.py
+```
+
+网页根据日期、天气、温度、湿度和风速生成租赁量预测。模型仅使用 2011—2012 年数据训练，适合学习和演示，不能代替真实运营预测。
+
+如需重新训练模型，请从 Kaggle 下载数据集，将 `day.csv` 放入 `data/` 文件夹后运行：
+
+```bash
+python -m src.train_model
+```
+
+## 后续改进方向
+
+- 加入节假日活动、区域和更细粒度天气等特征。
+- 使用更新的数据重新训练，以支持真实未来日期预测。
+- 对比专业时间序列模型。
