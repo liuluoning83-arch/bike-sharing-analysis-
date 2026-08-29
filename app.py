@@ -17,6 +17,19 @@ WEATHER_OPTIONS = {
     "小雨或小雪": 3,
     "强降雨或强降雪": 4,
 }
+FEATURE_LABELS = {
+    "season": "季节",
+    "yr": "年份",
+    "mnth": "月份",
+    "holiday": "是否节假日",
+    "weekday": "星期",
+    "workingday": "是否工作日",
+    "weathersit": "天气状况",
+    "temp": "实际温度",
+    "atemp": "体感温度",
+    "hum": "湿度",
+    "windspeed": "风速",
+}
 
 
 def season_from_month(month: int) -> int:
@@ -99,6 +112,23 @@ input_data = build_feature_row(
 prediction = max(0, round(float(model.predict(input_data)[0])))
 
 st.metric("预测日租赁量", f"{prediction:,} 次")
+
+with st.expander("模型如何做出预测？"):
+    st.write(
+        "模型会综合日期、天气、温度、湿度、风速和是否工作日等条件预测日租赁量。"
+        "下图展示的是模型在所有训练数据上的全局特征重要性，而不是某一条预测的因果解释。"
+    )
+    importance = (
+        pd.DataFrame(
+            {
+                "特征": [FEATURE_LABELS[feature] for feature in FEATURES],
+                "重要性": model.feature_importances_,
+            }
+        )
+        .sort_values("重要性", ascending=False)
+        .set_index("特征")
+    )
+    st.bar_chart(importance)
 
 st.subheader("本次预测使用的特征")
 st.dataframe(input_data, use_container_width=True, hide_index=True)

@@ -87,6 +87,10 @@ date, weather, holiday, temperature_c, feels_like_c, humidity_percent, wind_spee
 - `weather`：天气，1=晴朗/少云，2=薄雾/多云，3=小雨或小雪，4=强降雨或强降雪
 - `holiday`：是否节假日，0=否，1=是
 
+## 模型可解释性
+
+网页会展示随机森林的全局特征重要性，帮助使用者理解模型主要参考哪些输入变量。特征重要性描述的是模型的预测贡献，不代表变量之间的因果关系。
+
 如需重新训练模型，请从 Kaggle 下载数据集，将 `day.csv` 放入 `data/` 文件夹后运行：
 
 ```bash
