@@ -15,14 +15,21 @@ try:
 except ImportError:
     OPENAI_AVAILABLE = False
 
-from src.history_aware_model import HISTORY_AWARE_FEATURES, HISTORY_FEATURES
-from src.hourly_model import HOURLY_FEATURES
-from src.model import FEATURES
-
-
 MODEL_PATH = Path("artifacts/bike_rental_model.joblib")
 HOURLY_MODEL_PATH = Path("artifacts/hourly_bike_rental_model.joblib")
 HISTORY_AWARE_MODEL_PATH = Path("artifacts/history_aware_hourly_bike_rental_model.joblib")
+
+# Keep the deployment entry point self-contained.  The saved models only need
+# these column names at prediction time, so importing training modules is not
+# necessary and can be fragile on cloud deployments.
+FEATURES = [
+    "season", "yr", "mnth", "holiday", "weekday", "workingday",
+    "weathersit", "temp", "atemp", "hum", "windspeed",
+]
+HOURLY_FEATURES = ["season", "yr", "mnth", "hr"] + FEATURES[3:]
+HISTORY_FEATURES = ["lag_1", "lag_24", "lag_168", "rolling_mean_24"]
+HISTORY_AWARE_FEATURES = HOURLY_FEATURES + HISTORY_FEATURES
+
 WEATHER_OPTIONS = {
     "晴朗 / 少云": 1,
     "薄雾 / 多云": 2,
